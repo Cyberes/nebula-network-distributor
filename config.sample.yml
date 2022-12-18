@@ -1,0 +1,56 @@
+ssh:
+  username: bobjoe
+  timeout: 3
+  ask_sudo: true
+
+subnet_prefix_size: 20
+
+certs:
+  ca_cert: /path/to/ca.crt
+  ca_key: /path/to/ca.key
+  output_dir: files/certs/
+
+restart_type: reload # reload or restart
+
+# If this doesn't exist it will be created recursive
+config_output_dir: generated-configs
+
+hosts:
+  bobjoe_desktop:
+    nebula_ip: 172.16.1.1
+    groups:
+      - bobjoe
+      - personal_devices
+  bobjoe_surface_pro:
+    nebula_ip: 172.16.1.2
+    groups:
+      - bobjoe
+      - personal_devices
+  bobjoe_phone:
+    nebula_ip: 172.16.1.3
+    groups:
+      - bobjoe
+      - personal_devices
+  big_server:
+    nebula_ip: 172.16.2.1
+    groups:
+      - server
+      - home_network
+    ssh:
+      username: root
+
+lighthouses:
+  lighthouse_vm:
+    nebula_ip: 172.16.0.1
+    groups:
+      - lighthouse
+      - relay
+      - home_network
+      - server
+  cloud_vps:
+    nebula_ip: 172.16.0.2
+    groups:
+      - lighthouse
+      - relay
+      - cloud_server
+      - unsafe_routes

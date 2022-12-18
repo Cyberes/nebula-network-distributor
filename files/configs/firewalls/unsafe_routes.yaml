@@ -1,0 +1,6 @@
+unsafe_routes:
+  inbound:
+    # Allow all traffic so that anything can go to the unsafe_routes
+    - port:    any
+      proto:   any
+      host:    any

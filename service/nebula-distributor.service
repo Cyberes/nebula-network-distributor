@@ -1,0 +1,11 @@
+[Unit]
+Description=Nebula Distributor Service
+Wants=basic.target
+After=basic.target network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /opt/nebula-distributor/distributor.py --daemon --log /var/log/nebula-distributor/distributor.log
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

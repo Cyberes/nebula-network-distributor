@@ -1,0 +1,9 @@
+webserver:
+  inbound:
+    # Allow access to web resources
+    - port:  80
+      proto: any
+      host:  any
+    - port:  443
+      proto: any
+      host:  any

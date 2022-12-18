@@ -1,0 +1,9 @@
+lighthouse:
+  am_lighthouse: true
+
+relay:
+  am_relay:      true
+  use_relays:    false
+
+logging:
+  level:         debug
