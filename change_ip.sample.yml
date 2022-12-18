@@ -1,0 +1,8 @@
+media_server:
+  nebula_ip: 10.0.0.222
+  new_ip: 198.123.2.2
+
+bobjoe_laptop:
+  nebula_ip: 10.0.0.221
+  new_ip: 198.123.2.3
+

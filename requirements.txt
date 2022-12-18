@@ -3,3 +3,4 @@ pyyaml~=6.0
 keyring~=23.9.3
 invoke~=1.7.3
 netifaces~=0.11.0
+paramiko~=2.12.0

@@ -4,6 +4,7 @@ files/certs/*
 !files/certs/certs go here.txt
 config.yml
 generated-configs/
+change_ip.yml
 
 # ---> Python
 # Byte-compiled / optimized / DLL files

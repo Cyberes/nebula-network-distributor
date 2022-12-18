@@ -1,5 +1,5 @@
+import os
 import socket
-import subprocess
 import time
 from getpass import getpass
 from pathlib import Path
@@ -7,6 +7,7 @@ from typing import Union
 
 import invoke
 import netifaces
+import paramiko
 from fabric import Connection, Config
 from fabric import Result
 
@@ -30,7 +31,7 @@ class NebulaSSH:
         self.channel = None
         self.sudo_password = None
         self.config = Config()
-        self.retries = retries
+        self.retries = retries  # How many times we retry a command. Sometimes a sudo command failes for no reason.
 
         if sudo_password:
             self.set_sudo_password(sudo_password)
@@ -77,8 +78,8 @@ class NebulaSSH:
 
     def copy_keys(self):
         cmd = f'/usr/bin/ssh-copy-id {self.username}@{self.host} -p {self.port}'
-        subprocess.run(cmd, shell=True)
-        # os.system(f'ssh-copy-id {self.username}@{self.host} -p {self.port}')
+        # subprocess.run(cmd, shell=True)
+        os.system(cmd)
 
     def execute(self, cmd: str, sudo=False) -> Union[Result, None]:
         if sudo:
@@ -93,6 +94,9 @@ class NebulaSSH:
             except invoke.exceptions.UnexpectedExit as e:
                 # print('Encountered error, retrying:', e)
                 time.sleep(2)
+            except paramiko.ssh_exception.AuthenticationException as e:
+                print('Authentication failure:', e)
+                self.copy_keys()
 
     def check_connected(self) -> bool:
         try:

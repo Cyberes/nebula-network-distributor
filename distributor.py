@@ -46,8 +46,10 @@ def get_ssh_username(host):
         return ''
 
 
-def reload_nebula():
-    print(f'{args.restart_type.capitalize()}ing Nebula service...')
+def reload_nebula(restart_type=None):
+    if not restart_type:
+        restart_type = args.restart_type
+    print(f'{restart_type.capitalize()}ing Nebula service...')
     if conn:
         reload = conn.sudo(reload_type_cmd).return_code
     else:
@@ -83,15 +85,17 @@ def bulk_build_config(hosts, base_config, host_base_config, type: str = None):
 parser = argparse.ArgumentParser(
     description='Nebula Network Distributor: an easy way to distribute configs and certs to your Nebula network.'
 )
-parser.add_argument('--config', required=False, default=Path(script_directory, 'config.yml'), help='Path to config.yml if it is not located next to this executable.')
-parser.add_argument('--files', required=False, default=Path(script_directory, 'files'), help='Path to the nebula-files directory if it is not located next to this executable.')
-parser.add_argument('--log', required=False, default=False, help='Log to this file.')
+parser.add_argument('--config', default=Path(script_directory, 'config.yml'), help='Path to config.yml if it is not located next to this executable.')
+parser.add_argument('--files', default=Path(script_directory, 'files'), help='Path to the nebula-files directory if it is not located next to this executable.')
+parser.add_argument('--log', default=False, help='Log to this file.')
 parser.add_argument('--restart-type', required=False, default='reload', choices=['reload', 'restart'], help='How to restart the Nebula service on the remote host.')
 parser.add_argument('--test-connection', action='store_true', help='Only test connection to each server.')
 parser.add_argument('-v', '--verbose', action='store_true')
 parser.add_argument('-d', '--daemon', action='store_true', help='Start in daemon mode.')
 parser.add_argument('-g', '--generate-certs', action='store_true', help='Generate and install new certs for each host.')
 parser.add_argument('--overwrite-pw', action='store_true', help='Don\'t read anything from the keystore and prompt for new passwords.')
+parser.add_argument('--change-ip', default=False, help='Path to a yaml file to change IPs.')
+parser.add_argument('--ping', action='store_true', help='Test connection to each host. Don\'t do anything else.')
 args = parser.parse_args()
 
 args.config = Path(args.config).expanduser().absolute().resolve()
@@ -145,22 +149,40 @@ if config['ssh']['ask_sudo']:
                 print('Retrieved sudo password for username:', machine['username'])
             usernames.append(machine['username'])
 
+change_ip_file = Path('change_ip.yml')
+change_ip_config = {}
+if change_ip_file.exists():
+    with open(change_ip_file, 'r') as file:
+        change_ip_config = yaml.safe_load(file)
+
 # Upload the files
 for machine in config_to_ip:
     print('\n=================================')
-    print(machine['host'])
+    new_ip = None
+    nebula_ip = machine['host']
+    if machine['hostname'] in change_ip_config.keys():
+        new_ip = change_ip_config[machine['hostname']]['new_ip']
+        nebula_ip = change_ip_config[machine['hostname']]['nebula_ip']
+
+    print(machine['hostname'], nebula_ip)
+    print('Changing IP to', new_ip) if new_ip is not None else None
     print()
 
+    # Generate the keys before connecting so the user has them locally and if the connection fails he can install them manually.
+    if args.generate_certs and not args.ping:
+        print('Generating new cert...')
+        certs_builder.create_new(name=machine['hostname'], ip=nebula_ip if not new_ip else new_ip, groups=machine['groups'], type=machine['type'], overwrite=True)
+
     # Skip local machine
-    if machine['host'] in get_ip_addresses():
-        print('Not connecting to', machine['host'], "since that's us.")
+    if nebula_ip in get_ip_addresses():
+        print('Not connecting to', nebula_ip, "since that's us.")
         local = True
         conn = None
     else:
-        print('Connecting to', machine['host'])
+        print('Connecting to', nebula_ip)
         local = False
         conn = NebulaSSH(
-            host=machine['host'],
+            host=nebula_ip,
             username=machine['username'],
             port=machine['port'],
             known_hosts_file=known_hosts_file,
@@ -168,14 +190,16 @@ for machine in config_to_ip:
             sudo_password=sudo_passwords.get(machine['username']),
         )
         if not conn.check_host_up():
-            print('Host', machine['host'], 'is down on port 22.')
-            failed_connections.append((machine['hostname'], machine['host']))
+            print('Host', nebula_ip, 'is down on port 22.')
+            failed_connections.append((machine['hostname'], nebula_ip))
             continue
         conn.connect()
         if not conn:
-            print('Failed to connect to', machine['host'])
+            print('Failed to connect to', nebula_ip)
             continue
         print('Connected to host:', conn.execute('hostname').stdout.strip())
+    if args.ping:
+        continue
 
     print('Installing config...')
     config_file = Path(machine['config_file']).read_text()
@@ -183,7 +207,7 @@ for machine in config_to_ip:
     if conn:
         config_install = conn.sudo(cmd_install)
         if not config_install or config_install.return_code:
-            print('Failed for host', machine['host'])
+            print('Failed for host', nebula_ip)
             continue
     else:
         subprocess.run(cmd_install, shell=True)
@@ -199,8 +223,8 @@ for machine in config_to_ip:
         print('Config installed and verified.')
 
     if args.generate_certs:
-        print('Generating new cert...')
-        certs_builder.create_new(name=machine['hostname'], ip=machine['host'], groups=machine['groups'], type=machine['type'], overwrite=True)
+        # print('Generating new cert...')
+        # certs_builder.create_new(name=machine['hostname'], ip=nebula_ip if not new_ip else new_ip, groups=machine['groups'], type=machine['type'], overwrite=True)
         host_crt, host_key = certs_builder.read_host_certs(machine['hostname'], machine['type'])
         print('Installing new cert...')
         cert_install_cmd = install_cert(ca_crt, host_crt, host_key)
@@ -209,7 +233,7 @@ for machine in config_to_ip:
             for cmd in cert_install_cmd:
                 x = conn.execute(cmd, sudo=True)
                 if not x or x.return_code:
-                    print('Failed for host', machine['host'])
+                    print('Failed for host', nebula_ip)
                     fail = True
                     break
             if fail:
@@ -227,7 +251,7 @@ for machine in config_to_ip:
             if fail:
                 continue
 
-    reload_nebula()
+    reload_nebula('restart' if new_ip else 'reload')
 
 print('\n=================================')
 print('\nDone!')
