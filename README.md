@@ -2,7 +2,7 @@
 
 _An easy way to distribute configs and certs to your Nebula network._
 
-I run a [Nebula network](https://github.com/slackhq/nebula) with over a dozen hosts. That's enough that it's tedious to manually configure each one but not enough to warrant something like Ansible.
+I run a [Nebula network](https://github.com/slackhq/nebula) with around two dozen hosts. That's enough that it's tedious to manually configure each one but not enough to warrant something like Ansible.
 
 I wrote this simple tool to construct configs from premade templates and push them out to the hosts.
 
