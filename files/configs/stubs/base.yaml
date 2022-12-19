@@ -51,8 +51,8 @@ firewall:
       proto:            icmp
       host:             any
 
-    # Allow Drake all access
+    # Allow Bob Joe all access
     - port:             any
       proto:            any
       host:             any
-      group:            drake
+      group:            bobjoe
