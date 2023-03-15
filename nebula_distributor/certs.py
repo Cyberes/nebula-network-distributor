@@ -38,8 +38,14 @@ class NebulaCerts:
         s = subprocess.run(cmd, shell=True)
         return out_cert, out_key
 
-    def read_host_certs(self, hostname: Union[str, Path], type: Union[str, Path]) -> Tuple[str, str]:
-        return (self.out_dir / f'{type}-{hostname}.crt').read_text(), (self.out_dir / f'{type}-{hostname}.key').read_text()
+    def read_host_certs(self, hostname: Union[str, Path], type: Union[str, Path]) -> Tuple[Path, str, Path, str]:
+        crt = self.out_dir / f'{type}-{hostname}.crt'
+        key = self.out_dir / f'{type}-{hostname}.key'
+        return crt, self.read_file(crt), key, self.read_file(key)
 
-    def read_ca_crt(self):
-        return self.ca_cert.read_text()
+    def read_ca_crt(self) -> Tuple[Path, str]:
+        return self.ca_cert, self.read_file(self.ca_cert)
+
+    def read_file(self, file_path: Union[str, Path]):
+        file_path = Path(file_path)
+        return None if not file_path.exists() else file_path.read_text()

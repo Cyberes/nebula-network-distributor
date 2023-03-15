@@ -26,14 +26,16 @@ class NebulaPaths:
     def __init__(self, files_root: Union[str, Path]):
         self.root = Path(files_root)
         self.configs = Path(self.root / 'configs')
-        self.stubs = stub(Path(self.configs / 'stubs'))
-        self.firewalls = stub(Path(self.configs / 'firewalls'))
+        self.base_configs = stub(Path(self.configs / 'base'))
+        self.firewalls = stub(Path(self.configs / 'firewall'))
+        self.extras = stub(Path(self.configs / 'extra'))
+        self.overrides = stub(Path(self.configs / 'override'))
         self.certs = Path(self.root / 'certs')
 
-        self.stubs.base = Path(self.stubs, 'base.yaml')
-        self.stubs.default = Path(self.stubs, 'default.yaml')
-        self.stubs.host_base = Path(self.stubs, 'host-base.yaml')
-        self.stubs.lighthouse_base = Path(self.stubs, 'lighthouse-base.yaml')
+        self.base_configs.base = Path(self.base_configs, 'base.yaml')
+        self.base_configs.default = Path(self.base_configs, 'default.yaml')
+        self.base_configs.host_base = Path(self.base_configs, 'host-base.yaml')
+        self.base_configs.lighthouse_base = Path(self.base_configs, 'lighthouse-base.yaml')
 
     def __repr__(self):
         items = (f"{k}={v!r}" for k, v in self.__dict__.items())
